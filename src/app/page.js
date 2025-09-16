@@ -1,103 +1,231 @@
-import Image from "next/image";
+import fs from "fs";
+import path from "path";
 
-export default function Home() {
-  return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              src/app/page.js
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+const PUBLIC_DIR = path.join(process.cwd(), "public");
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
+function listDirectory(dirPath, relBase = "") {
+  const entries = fs.readdirSync(dirPath, { withFileTypes: true });
+  const visible = entries.filter((e) => !e.name.startsWith("."));
+  visible.sort((a, b) => {
+    if (a.isDirectory() && !b.isDirectory()) return -1;
+    if (!a.isDirectory() && b.isDirectory()) return 1;
+    return a.name.localeCompare(b.name);
+  });
+  return visible.map((e) => {
+    const rel = relBase ? `${relBase}/${e.name}` : `/${e.name}`;
+    return {
+      type: e.isDirectory() ? "dir" : "file",
+      name: e.name,
+      relPath: rel,
+      url: rel,
+    };
+  });
+}
+
+function isImage(fileName) {
+  return /(\.png|\.jpg|\.jpeg|\.gif|\.webp|\.bmp|\.svg)$/i.test(fileName);
+}
+
+function isVideo(fileName) {
+  return /(\.mp4|\.webm|\.ogg|\.mov|\.m4v)$/i.test(fileName);
+}
+
+function isPdf(fileName) {
+  return /(\.pdf)$/i.test(fileName);
+}
+
+function FileItem({ node }) {
+  const commonLink = "text-blue-600 hover:underline break-all";
+  const wrapper = "mt-1";
+  if (isPdf(node.name)) {
+    return (
+      <div className={wrapper}>
+        <a href={node.url} target="_blank" rel="noopener noreferrer" className={commonLink}>
+          📄 {node.name}
+        </a>
+        <a href={node.url} download className="ml-3 text-sm text-gray-600 hover:text-gray-800">
+          Download
+        </a>
+      </div>
+    );
+  }
+  if (isImage(node.name)) {
+    return (
+      <div className={`${wrapper} group`}>
+        <div className="flex items-center gap-2">
+          <span>🖼️</span>
+          <span className="font-medium">{node.name}</span>
+          <a href={node.url} download className="ml-2 text-xs text-gray-600 hover:text-gray-800">
+            Download
           </a>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+        <img
+          src={node.url}
+          alt={node.name}
+          className="mt-2 max-h-56 rounded border border-gray-200 shadow-sm"
+          loading="lazy"
+        />
+      </div>
+    );
+  }
+  if (isVideo(node.name)) {
+    return (
+      <div className={wrapper}>
+        <div className="flex items-center gap-2">
+          <span>🎞️</span>
+          <span className="font-medium">{node.name}</span>
+          <a href={node.url} download className="ml-2 text-xs text-gray-600 hover:text-gray-800">
+            Download
+          </a>
+        </div>
+        <video
+          src={node.url}
+          className="mt-2 w-full max-w-3xl rounded border border-gray-200 shadow-sm"
+          controls
+          preload="metadata"
+        />
+      </div>
+    );
+  }
+  return (
+    <div className={wrapper}>
+      <a
+        href={node.url}
+        className={commonLink}
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        📎 {node.name}
+      </a>
+      <a href={node.url} download className="ml-3 text-sm text-gray-600 hover:text-gray-800">
+        Download
+      </a>
     </div>
+  );
+}
+function Breadcrumb({ relPath }) {
+  const cleaned = relPath.replace(/^\/+/, "");
+  const parts = cleaned ? cleaned.split("/").filter(Boolean) : [];
+  const crumbs = [{ name: "Home", href: "/" }];
+  let acc = "";
+  for (const part of parts) {
+    acc += `/${part}`;
+    crumbs.push({ name: part, href: `/?path=${encodeURIComponent(acc)}` });
+  }
+  return (
+    <nav className="flex items-center flex-wrap gap-1 text-sm text-gray-700">
+      {crumbs.map((c, idx) => (
+        <span key={`${c.href}-${idx}`} className="flex items-center gap-1">
+          {idx > 0 && <span className="text-gray-400">/</span>}
+          <a href={c.href} className="hover:underline">
+            {c.name}
+          </a>
+        </span>
+      ))}
+    </nav>
+  );
+}
+
+function FolderList({ items, currentRelPath }) {
+  const folders = items.filter((i) => i.type === "dir");
+  const files = items.filter((i) => i.type === "file");
+  return (
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-sm font-semibold text-gray-600 mb-2">Folders</h2>
+        {folders.length === 0 ? (
+          <p className="text-gray-500 text-sm">No folders</p>
+        ) : (
+          <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {folders.map((f) => (
+              <li key={`dir-${f.relPath}`} className="">
+                <a
+                  href={`/?path=${encodeURIComponent(f.relPath)}`}
+                  className="flex items-center gap-2 rounded border border-gray-200 bg-white p-3 shadow-sm hover:bg-gray-50"
+                >
+                  <span>📁</span>
+                  <span className="font-medium truncate">{f.name}</span>
+                </a>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+      <div>
+        <h2 className="text-sm font-semibold text-gray-600 mb-2">Files</h2>
+        {files.length === 0 ? (
+          <p className="text-gray-500 text-sm">No files</p>
+        ) : (
+          <ul className="space-y-3">
+            {files.map((file) => (
+              <li key={`file-${file.relPath}`} className="rounded border border-gray-200 bg-white p-3 shadow-sm">
+                <FileItem node={file} />
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    </div>
+  );
+}
+
+export default async function Home({ searchParams }) {
+  const sp = await searchParams;
+  const rawPath = typeof sp?.path === "string" ? sp.path : "";
+  const noNull = (rawPath || "").replace(/\0/g, "");
+  const forwardSlashes = noNull.replace(/\\/g, "/");
+  let safeRel = path.posix.normalize(forwardSlashes);
+  if (safeRel === "." || safeRel === "./" || safeRel === "/") safeRel = "";
+  if (safeRel.startsWith("..")) safeRel = "";
+
+  const abs = path.join(PUBLIC_DIR, safeRel);
+  let currentAbs = abs;
+  if (!abs.startsWith(PUBLIC_DIR)) {
+    currentAbs = PUBLIC_DIR;
+    safeRel = "";
+  }
+  let items = [];
+  if (fs.existsSync(currentAbs)) {
+    try {
+      items = listDirectory(currentAbs, safeRel);
+    } catch (e) {
+      items = [];
+    }
+  }
+
+  const parentRel = (() => {
+    const cleaned = safeRel.replace(/^\/+/, "");
+    const parts = cleaned.split("/").filter(Boolean);
+    parts.pop();
+    const parent = parts.length ? `/${parts.join("/")}` : "";
+    return parent;
+  })();
+
+  return (
+    <main className="p-6 font-sans">
+      <div className="mx-auto max-w-6xl">
+        <h1 className="text-2xl font-bold mb-2">Public Files Browser</h1>
+        <div className="flex items-center justify-between mb-3">
+          <Breadcrumb relPath={safeRel} />
+          <div className="flex items-center gap-2">
+            {safeRel ? (
+              <a
+                href={parentRel ? `/?path=${encodeURIComponent(parentRel)}` : "/"}
+                className="rounded border border-gray-200 bg-white px-3 py-1.5 text-sm shadow-sm hover:bg-gray-50"
+              >
+                ⬆️ Up
+              </a>
+            ) : null}
+          </div>
+        </div>
+        <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+          {items.length === 0 ? (
+            <p className="text-gray-500">This folder is empty.</p>
+          ) : (
+            <FolderList items={items} currentRelPath={safeRel} />
+          )}
+        </div>
+      </div>
+    </main>
   );
 }
